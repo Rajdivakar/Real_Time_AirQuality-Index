@@ -4,7 +4,7 @@ import time
 
 # API details
 API_KEY = '7fc48822b7a5336d09b725b685e01c9d'
-WEATHER_API_KEY = 'ef9b13a44c000c096e28c7b84f91436d' 
+WEATHER_API_KEY = 'ef9b13a44c000c096e28c7b84f91436d'
 GEOCODING_URL = 'http://api.openweathermap.org/geo/1.0/direct'
 AIR_QUALITY_URL = 'http://api.openweathermap.org/data/2.5/air_pollution'
 WEATHER_URL = 'http://api.openweathermap.org/data/2.5/weather'
@@ -13,7 +13,6 @@ st.set_page_config(page_title="Air Quality Monitor", page_icon="🌍", layout="w
 
 # Adding a header image and description
 st.markdown('<img src="https://t4.ftcdn.net/jpg/08/67/03/97/360_F_867039750_weThOJ30L07f0C6kYqJKyTjZB6hjyvP0.jpg" style="width:100%;height:auto;"/>', unsafe_allow_html=True)
-
 st.title("🌍 Air Quality Monitor")
 
 # Function to get city coordinates
@@ -22,7 +21,6 @@ def get_city_coordinates(city):
         url = f"{GEOCODING_URL}?q={city}&limit=1&appid={API_KEY}"
         response = requests.get(url)
         data = response.json()
-
         if response.status_code == 200 and data:
             lat = data[0]['lat']
             lon = data[0]['lon']
@@ -42,7 +40,6 @@ def get_air_quality(city):
             url = f"{AIR_QUALITY_URL}?lat={lat}&lon={lon}&appid={API_KEY}"
             response = requests.get(url)
             data = response.json()
-            
             if response.status_code == 200:
                 return data
             else:
@@ -61,7 +58,6 @@ def get_weather_data(city):
             url = f"{WEATHER_URL}?lat={lat}&lon={lon}&appid={WEATHER_API_KEY}&units=metric"
             response = requests.get(url)
             data = response.json()
-
             if response.status_code == 200:
                 return data
             else:
@@ -72,23 +68,28 @@ def get_weather_data(city):
             return None
     return None
 
-# Sidebar with loading effect
+# Sidebar input for city name
 with st.sidebar:
     st.header(" 🔎 Search your City")
     city = st.text_input("Enter Your city name", placeholder="e.g., Ludhiyana")
-    fetch_btn = st.button("Check Air Quality")
+    st.write("Enter a city name to display the data. You can collapse the sidebar after entering.")
 
-    if fetch_btn:
-        progress_bar = st.progress(0) 
+    progress_bar = st.progress(0)
+    air_quality_data, weather_data = None, None
 
+    if city:
         for i in range(100):
             time.sleep(0.02)  # Simulate delay
             progress_bar.progress(i + 1)
-
+        
         air_quality_data = get_air_quality(city)
         weather_data = get_weather_data(city)
         progress_bar.empty()
+        
+        if air_quality_data and weather_data:
+            st.success("Data loaded successfully!")
 
+# Display results if data is available
 if city and air_quality_data and weather_data:
     aqi = air_quality_data['list'][0]['main']['aqi']
     components = air_quality_data['list'][0]['components']
@@ -98,12 +99,12 @@ if city and air_quality_data and weather_data:
     aqi_level = {1: "Good", 2: "Fair", 3: "Moderate", 4: "Poor", 5: "Very Poor"}
     aqi_color = {1: "#00e400", 2: "#ffff00", 3: "#ff7e00", 4: "#ff0000", 5: "#7e0023"}
 
-    # Display AQI Level
-    st.markdown(f"<h2 style='color:{aqi_color[aqi]};'>{aqi_level[aqi]} Air Quality</h2>", unsafe_allow_html=True)
+    # Display AQI Level with color and temperature
+    st.markdown(f"<h2 style='color:{aqi_color[aqi]}; text-align: center;'>{aqi_level[aqi]} Air Quality</h2>", unsafe_allow_html=True)
+    st.metric("🌡 Temperature (°C)", f"{temp}°C")
 
-    st.metric("Temperature Of Your City(°C)", f"{temp}°C")
-    
-    # Display metrics for air quality components
+    # Display metrics for air quality components in a structured layout
+    st.subheader("🔍 Air Quality Components")
     col1, col2, col3 = st.columns(3)
     col1.metric("CO (µg/m³)", round(components['co'], 2))
     col2.metric("NO (µg/m³)", round(components['no'], 2))
@@ -119,6 +120,6 @@ if city and air_quality_data and weather_data:
     col8.metric("NH3 (µg/m³)", round(components['nh3'], 2))
 
 else:
-    st.info("Enter a city name in the sidebar and click 'Check Air Quality' to get the data.")
+    st.info("Enter a city name in the sidebar to get the data.")
 
 st.markdown("<hr><center><p>🌍 Thanks for using my App 🙏 </p></center>", unsafe_allow_html=True)
